@@ -1,21 +1,39 @@
 {
-    "name": "ws_task",
+    "name": "battleship",
     "version": "1.0.0",
-    "description": "Template for the WebSocket remote control task",
-    "main": "index.js",
+    "description": "Server from battleship frontend",
+    "main": "index.ts",
     "type": "module",
+    "engines": {
+        "node": ">=22.14.0"
+    },
     "scripts": {
-        "start": "node ./index.js",
-        "start:dev": "nodemon ./index.js",
+        "start:dev": "tsx --watch ./ --ext ts --exec ts-node index.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
-    "author": "Andrei Auchynnikau",
-    "keywords": [],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ArturKhelshtein/battleship"
+    },
+    "author": "ArturKhelshtein",
+    "keywords": [
+        "nodejs",
+        "ArturKhelshtein"
+    ],
     "license": "ISC",
     "devDependencies": {
-        "nodemon": "^2.0.16"
+        "@typescript-eslint/eslint-plugin": "^8.32.1",
+        "@typescript-eslint/parser": "^8.32.1",
+        "cross-env": "^7.0.3",
+        "eslint": "^9.26.0",
+        "eslint-config-prettier": "^10.1.5",
+        "ts-node": "^10.9.2",
+        "ts-node-dev": "^2.0.0",
+        "tsx": "^4.19.4",
+        "typescript": "^5.8.3"
     },
     "dependencies": {
+        "dotenv": "^16.5.0",
         "ws": "^8.8.0"
     }
 }
