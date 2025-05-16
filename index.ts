@@ -1,7 +1,14 @@
-import { httpServer } from "./src/http_server/index.js";
 import 'dotenv/config';
 
-const { HTTP_PORT = 4000 } = process.env;
+import { httpServer } from "./src/http_server/index.js";
+import { initWebSocketServer } from "./src/websocket/index.js";
 
-console.log(`Start static http server on the ${HTTP_PORT} port!`);
-httpServer.listen(HTTP_PORT);
+const HTTP_PORT = Number(process.env.HTTP_PORT ?? 8181)
+const WEB_SOCKET_PORT = Number(process.env.WEB_SOCKET_PORT ?? 3000)
+
+httpServer.listen(HTTP_PORT, () => {
+    console.log(`Start static http server on the ${HTTP_PORT} port!`);
+});
+
+initWebSocketServer({ port: WEB_SOCKET_PORT, path: '/'});
+
