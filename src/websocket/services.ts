@@ -1,5 +1,5 @@
 import player from '../types/player.types';
-import { resReg } from '../types/res.types';
+import { resReg, dataReg } from '../types/res.types';
 
 const players: player[] = [];
 
@@ -10,18 +10,19 @@ function registration(ws: WebSocket, data: { name: string; password: string }, i
 
     const existingPlayer = players.find(player => player.name === name);
     let res: resReg;
+    let dataString: dataReg;
 
     if (existingPlayer) {
-        const dataString = JSON.stringify({
+        dataString = {
             name,
             index: existingPlayer.index,
             error: true,
             errorText: 'Player already exists',
-        });
+        };
 
         res = {
             type: 'reg',
-            data: dataString,
+            data: JSON.stringify(dataString),
             id,
         };
 
@@ -36,16 +37,16 @@ function registration(ws: WebSocket, data: { name: string; password: string }, i
     };
     players.push(newPlayer);
 
-    const dataString = JSON.stringify({
+    dataString = {
         name,
         index: newPlayer.index,
         error: false,
         errorText: '',
-    });
+    };
 
     res = {
         type: 'reg',
-        data: dataString,
+        data: JSON.stringify(dataString),
         id,
     };
 

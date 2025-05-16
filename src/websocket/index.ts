@@ -5,8 +5,8 @@ import registration from './services';
 
 export function startWebSocketServer({ port, path }: { port: number; path: string }) {
     const wss = new WebSocketServer({ port: port, path: path });
-
     console.log(`WebSocket server on the ${port} port!`);
+
     wss.on('connection', (ws: any): void => {
         console.log('New player connected');
 

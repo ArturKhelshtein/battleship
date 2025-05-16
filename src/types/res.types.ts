@@ -12,12 +12,14 @@ enum typeOutgoingMessage {
 type resReg = {
     type: 'reg';
     data: string,
-//     name: string;
-//     index: number | string;
-//     error: boolean;
-//     errorText: string;
-// }
 id: number;
 };
 
-export { resReg };
+type dataReg = {
+    name: string;
+    index: number | string;
+    error: boolean;
+    errorText: string;
+}
+
+export { resReg, dataReg };
