@@ -1,7 +1,7 @@
 import WebSocket, { WebSocketServer } from 'ws';
 
 import message from '../types/message';
-import registration from './services';
+import { registration } from './services';
 
 export function startWebSocketServer({ port, path }: { port: number; path: string }) {
     const wss = new WebSocketServer({ port: port, path: path });
@@ -16,12 +16,16 @@ export function startWebSocketServer({ port, path }: { port: number; path: strin
             try {
                 const messageStr = message.toString();
                 const req: message = JSON.parse(messageStr);
-                const data: object = JSON.parse(req.data);
-
                 console.log(`Request: ${JSON.stringify(req, null, 4)}`);
 
-                if (req.type === 'reg') {
-                    registration(ws, data as { name: string; password: string }, req.id);
+                const data: object = JSON.parse(req.data);
+
+                switch (req.type) {
+                    case 'reg':
+                        registration(ws, data as { name: string; password: string }, req.id);
+                        break;
+                    default:
+                        console.log(`Unknown message type: ${req.type}`);
                 }
             } catch {
                 console.error('Invalid JSON');
