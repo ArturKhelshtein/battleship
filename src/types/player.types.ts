@@ -1,7 +1,7 @@
 type player = {
-    name: string,
-    index: number | string,
-    password: string,
-}
+    name: string;
+    index: string;
+    password: string;
+};
 
 export default player;

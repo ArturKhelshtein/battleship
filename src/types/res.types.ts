@@ -6,20 +6,31 @@ enum typeOutgoingMessage {
     'start_game',
     'attack',
     'turn',
-    'finish'
+    'finish',
 }
 
 type resReg = {
     type: 'reg';
-    data: string,
-id: number;
+    data: string;
+    id: number;
 };
 
 type dataReg = {
     name: string;
-    index: number | string;
+    index: string;
     error: boolean;
     errorText: string;
-}
+};
 
-export { resReg, dataReg };
+type resCreateGame = {
+    type: 'create_game';
+    data: string;
+    id: number;
+};
+
+type dataCreateGame = {
+    idGame: string;
+    idPlayer: string;
+};
+
+export { resReg, dataReg, resCreateGame, dataCreateGame };
