@@ -33,11 +33,17 @@ function startGame(
 
     const isFirstPlayer = !games.some(game => game.gameId === gameId);
 
+    const preparedShips = ships.map(ship => ({
+        ...ship,
+        stamina: ship.length,
+    }));
+
     const playerGame: game = {
         gameId,
-        ships,
+        ships: preparedShips,
         playerIndex: indexPlayer,
         ...(isFirstPlayer && { startedPlayerIndex: indexPlayer }),
+        shots: [],
     };
 
     games.push(playerGame);
@@ -58,7 +64,8 @@ function startGame(
                 return;
             }
 
-            const isCurrentPlayerFirst = gamePlayers.find(game => game.startedPlayerIndex)?.startedPlayerIndex === clientBS.playerIndex;
+            const isCurrentPlayerFirst =
+                gamePlayers.find(game => game.startedPlayerIndex)?.startedPlayerIndex === clientBS.playerIndex;
 
             const ships = clientGame?.ships || [];
             const dataString: dataStartGame = {
@@ -83,4 +90,26 @@ function turn(ws: IBattleshipWebSocket, id: number) {
     ws.send(JSON.stringify(preparingRes(resType.turn, JSON.stringify(dataString), id)));
 }
 
-export { createGame, joinGame, startGame };
+function shoot(
+    wss: WebSocketServer,
+    ws: IBattleshipWebSocket,
+    attack: { gameId: string; x: number; y: number; indexPlayer: string },
+    id: number
+) {
+    const { gameId, x, y, indexPlayer } = attack;
+
+    const gameDefencePlayer = games.find(game => game.gameId === gameId && game.playerIndex !== ws.playerIndex);
+
+    if (!gameDefencePlayer) {
+        return;
+    }
+
+    const alreadyShot = gameDefencePlayer.shots.some(pos => pos.x === x && pos.y === y);
+
+    if (alreadyShot) {
+        return;
+    }
+
+}
+
+export { createGame, joinGame, startGame, shoot };

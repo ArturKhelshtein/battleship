@@ -6,6 +6,7 @@ type ship = {
     direction: boolean;
     length: number;
     type: 'small' | 'medium' | 'large' | 'huge';
+    stamina?: number;
 };
 
 export default ship;
