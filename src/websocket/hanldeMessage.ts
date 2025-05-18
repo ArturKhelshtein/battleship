@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 
 import message from '../types/message.types';
 import { registration } from './services/registration.services';
-import { createRoom } from './services/rooms.service';
+import { addUserToRoom, createRoom, joinRoom, updateRooms } from './services/rooms.service';
 
 function handleMessage(wss: WebSocketServer, ws: any, message: string) {
     try {
@@ -11,6 +11,7 @@ function handleMessage(wss: WebSocketServer, ws: any, message: string) {
         console.log(`Request: ${JSON.stringify(req, null, 4)}`);
 
         let data: object;
+
         if (req.data) {
             data = JSON.parse(req.data);
         }
@@ -21,6 +22,11 @@ function handleMessage(wss: WebSocketServer, ws: any, message: string) {
                 break;
             case 'create_room':
                 createRoom(wss, ws, req.id);
+                break;
+            case 'add_user_to_room':
+                const roomData = JSON.parse(req.data) as { indexRoom: string };
+                joinRoom(wss, ws, roomData.indexRoom, req.id)
+                updateRooms(wss, req.id);
                 break;
             default:
                 console.log(`Unknown message type: ${req.type}`);

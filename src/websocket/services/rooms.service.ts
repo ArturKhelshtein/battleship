@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 
 import IBattleshipWebSocket from '../../types/battleshipWebSocket.type';
 import { dataUpdateRoom, resUpdateRoom } from '../../types/res.types';
-import { createGame } from './game.service';
+import { createGame, joinGame } from './game.service';
 import { room, updateRoom } from '../../types/room.types';
 import rooms from '../../db/rooms';
 import players from '../../db/players';
@@ -19,9 +19,15 @@ function createRoom(wss: WebSocketServer, ws: IBattleshipWebSocket, id: number) 
     rooms.push(newRoom);
 
     addUserToRoom(ws, newRoom.index);
-    console.log(newRoom);
-
     createGame(ws, roomId, id);
+    updateRooms(wss, id);
+}
+
+function joinRoom (wss: WebSocketServer, ws: IBattleshipWebSocket, roomId: string, id: number) {
+    console.log(`User ${ws.playerName} join room ${roomId}`);
+
+    addUserToRoom(ws, roomId);
+    joinGame(ws, roomId, id);
     updateRooms(wss, id);
 }
 
@@ -72,4 +78,4 @@ function updateRooms(wss: WebSocketServer, id: number) {
     });
 }
 
-export { createRoom, addUserToRoom, updateRooms }
+export { createRoom, addUserToRoom, updateRooms, joinRoom }
