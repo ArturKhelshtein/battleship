@@ -1,6 +1,6 @@
 import WebSocket, { WebSocketServer } from 'ws';
 
-import message from '../types/message';
+import message from '../types/message.types';
 import { registration, createRoom } from './services';
 
 export function startWebSocketServer({ port, path }: { port: number; path: string }) {
@@ -25,10 +25,10 @@ export function startWebSocketServer({ port, path }: { port: number; path: strin
 
                 switch (req.type) {
                     case 'reg':
-                        registration(ws, data! as { name: string; password: string }, req.id);
+                        registration(wss, ws, data! as { name: string; password: string }, req.id);
                         break;
                     case 'create_room':
-                        createRoom(ws, req.id);
+                        createRoom(wss, ws, req.id);
                         break;
                     default:
                         console.log(`Unknown message type: ${req.type}`);

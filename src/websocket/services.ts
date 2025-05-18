@@ -1,21 +1,43 @@
-import player from '../types/player.types';
-import room from '../types/room.types';
-import { resReg, dataReg, dataCreateGame, resCreateGame } from '../types/res.types';
+import { WebSocketServer } from 'ws';
 
-const players: player[] = [];
+import { IPlayerWithPassword } from '../types/player.types';
+import { room, updateRoom as updateRooms } from '../types/room.types';
+import { resReg, dataReg, dataCreateGame, resCreateGame, dataUpdateRoom, resUpdateRoom } from '../types/res.types';
+
+const players: IPlayerWithPassword[] = [];
 const rooms: room[] = [];
 
 function registration(
+    wss:WebSocketServer,
     ws: WebSocket & { playerIndex?: string; playerName?: string },
     data: { name: string; password: string },
     id: number
 ) {
     const { name, password } = data;
     console.log(`Registration player: ${name}`);
-
-    const existingPlayer = players.find(player => player.name === name);
     let dataString: dataReg;
     let res: resReg;
+
+    if (!validation(name, password)) {
+        dataString = {
+            name,
+            index: '',
+            error: true,
+            errorText: 'Invalid name or password',
+        };
+
+        res = {
+            type: 'reg',
+            data: JSON.stringify(dataString),
+            id,
+        };
+
+        console.log('Invalid name or password');
+        ws.send(JSON.stringify(res));
+        return;
+    }
+
+    const existingPlayer = players.find(player => player.name === name);
 
     if (existingPlayer) {
         if (password !== existingPlayer.password) {
@@ -32,7 +54,7 @@ function registration(
                 id,
             };
 
-            console.log(`Wrong name or password`);
+            console.log('Wrong name or password');
             ws.send(JSON.stringify(res));
             return;
         }
@@ -58,7 +80,7 @@ function registration(
         return;
     }
 
-    const newPlayer: player = {
+    const newPlayer: IPlayerWithPassword = {
         name,
         password,
         index: crypto.randomUUID().toString(),
@@ -82,9 +104,10 @@ function registration(
 
     console.log(`Player ${name} registered`);
     ws.send(JSON.stringify(res));
+    updateRooms(wss, id)
 }
 
-function createRoom(ws: WebSocket & { playerIndex: string; playerName: string }, id: number) {
+function createRoom(wss: WebSocketServer, ws: WebSocket & { playerIndex: string; playerName: string }, id: number) {
     const roomId = crypto.randomUUID().toString();
 
     console.log(`User ${ws.playerName} create room ${roomId}`);
@@ -99,6 +122,7 @@ function createRoom(ws: WebSocket & { playerIndex: string; playerName: string },
     console.log(newRoom);
 
     createGame(ws, roomId, id);
+    updateRooms(wss, id);
 }
 
 function addUserToRoom(ws: WebSocket & { playerIndex: string; playerName: string }, roomId: string) {
@@ -130,6 +154,44 @@ function createGame(ws: WebSocket & { playerIndex: string; playerName: string },
     };
 
     ws.send(JSON.stringify(res));
+}
+
+function updateRooms(wss: WebSocketServer, id: number) {
+    const roomWithOnePlayer: dataUpdateRoom = rooms
+        .filter(room => room.usersId.length === 1)
+        .map(room => {
+            const result: updateRooms = {
+                roomId: room.index,
+                roomUsers: [
+                    {
+                        name: players.find(player => player.index === room.usersId[0])?.name ?? '',
+                        index: room.usersId[0],
+                    },
+                ],
+            };
+
+            return result;
+        }); 
+
+    const res: resUpdateRoom = {
+        type: 'update_room',
+        data: JSON.stringify(roomWithOnePlayer),
+        id,
+    };
+
+    wss.clients.forEach(client => {
+        if (client.readyState === client.OPEN) {
+            client.send(JSON.stringify(res));
+        }
+    });
+}
+
+function validation(name: string, password: string) {
+    if (name.length < 5 || password.length < 5) {
+        return false;
+    }
+
+    return true;
 }
 
 export { registration, createRoom, addUserToRoom };

@@ -1,7 +1,10 @@
-type player = {
+interface IPlayer {
     name: string;
     index: string;
-    password: string;
-};
+}
 
-export default player;
+interface IPlayerWithPassword extends IPlayer {
+    password: string;
+}
+
+export { IPlayerWithPassword, IPlayer };

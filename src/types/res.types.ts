@@ -1,3 +1,5 @@
+import { updateRoom } from "./room.types";
+
 enum typeOutgoingMessage {
     'reg',
     'update_winners',
@@ -9,11 +11,15 @@ enum typeOutgoingMessage {
     'finish',
 }
 
-type resReg = {
-    type: 'reg';
+type resBase<T> = {
+    type: T;
     data: string;
     id: number;
 };
+
+type resReg = resBase<'reg'>;
+type resCreateGame = resBase<'create_game'>;
+type resUpdateRoom = resBase<'update_room'>;
 
 type dataReg = {
     name: string;
@@ -22,15 +28,11 @@ type dataReg = {
     errorText: string;
 };
 
-type resCreateGame = {
-    type: 'create_game';
-    data: string;
-    id: number;
-};
-
 type dataCreateGame = {
     idGame: string;
     idPlayer: string;
 };
 
-export { resReg, dataReg, resCreateGame, dataCreateGame };
+type dataUpdateRoom = updateRoom[];
+
+export { resReg, dataReg, resCreateGame, dataCreateGame, resUpdateRoom, dataUpdateRoom };
