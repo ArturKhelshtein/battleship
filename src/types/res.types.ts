@@ -1,25 +1,16 @@
-import { updateRoom } from "./room.types";
+import { updateRoom } from './room.types';
+import ship from './ship.types';
 
-enum typeOutgoingMessage {
-    'reg',
-    'update_winners',
-    'create_game',
-    'update_room',
-    'start_game',
-    'attack',
-    'turn',
-    'finish',
+enum resType {
+    reg = 'reg',
+    update_winners = 'update_winners',
+    create_game = 'create_game',
+    update_room = 'update_room',
+    start_game = 'start_game',
+    attack = 'attack',
+    turn = 'turn',
+    finish = 'finish',
 }
-
-type resBase<T> = {
-    type: T;
-    data: string;
-    id: number;
-};
-
-type resReg = resBase<'reg'>;
-type resCreateGame = resBase<'create_game'>;
-type resUpdateRoom = resBase<'update_room'>;
 
 type dataReg = {
     name: string;
@@ -35,4 +26,9 @@ type dataCreateGame = {
 
 type dataUpdateRoom = updateRoom[];
 
-export { resReg, dataReg, resCreateGame, dataCreateGame, resUpdateRoom, dataUpdateRoom };
+type dataStartGame = {
+    ships: ship[];
+    currentPlayerIndex: string;
+};
+
+export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame };

@@ -1,12 +1,13 @@
 import { WebSocketServer } from 'ws';
 
 import { IPlayerWithPassword } from '../../types/player.types';
-import { resReg, dataReg } from '../../types/res.types';
+import { dataReg, resType } from '../../types/res.types';
 import players from '../../db/players';
 import { updateRooms } from './rooms.service';
+import { preparingRes } from '../utils';
 
 function registration(
-    wss:WebSocketServer,
+    wss: WebSocketServer,
     ws: WebSocket & { playerIndex?: string; playerName?: string },
     data: { name: string; password: string },
     id: number
@@ -14,7 +15,7 @@ function registration(
     const { name, password } = data;
     console.log(`Registration player: ${name}`);
     let dataString: dataReg;
-    let res: resReg;
+    let res;
 
     if (!validation(name, password)) {
         dataString = {
@@ -24,11 +25,7 @@ function registration(
             errorText: 'Invalid name or password',
         };
 
-        res = {
-            type: 'reg',
-            data: JSON.stringify(dataString),
-            id,
-        };
+        res = preparingRes(resType.reg, dataString, id);
 
         console.log('Invalid name or password');
         ws.send(JSON.stringify(res));
@@ -46,11 +43,7 @@ function registration(
                 errorText: 'Wrong name or password',
             };
 
-            res = {
-                type: 'reg',
-                data: JSON.stringify(dataString),
-                id,
-            };
+            res = preparingRes(resType.reg, dataString, id);
 
             console.log('Wrong name or password');
             ws.send(JSON.stringify(res));
@@ -67,11 +60,7 @@ function registration(
             errorText: '',
         };
 
-        res = {
-            type: 'reg',
-            data: JSON.stringify(dataString),
-            id,
-        };
+        res = preparingRes(resType.reg, dataString, id);
 
         console.log(`Player ${name} login`);
         ws.send(JSON.stringify(res));
@@ -94,15 +83,11 @@ function registration(
         errorText: '',
     };
 
-    res = {
-        type: 'reg',
-        data: JSON.stringify(dataString),
-        id,
-    };
+    res = preparingRes(resType.reg, dataString, id);
 
     console.log(`Player ${name} registered`);
     ws.send(JSON.stringify(res));
-    updateRooms(wss, id)
+    updateRooms(wss, id);
 }
 
 function validation(name: string, password: string) {
