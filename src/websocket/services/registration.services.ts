@@ -1,11 +1,9 @@
 import { WebSocketServer } from 'ws';
 
-import { IPlayerWithPassword } from '../types/player.types';
-import { room, updateRoom as updateRooms } from '../types/room.types';
-import { resReg, dataReg, dataCreateGame, resCreateGame, dataUpdateRoom, resUpdateRoom } from '../types/res.types';
-
-const players: IPlayerWithPassword[] = [];
-const rooms: room[] = [];
+import { IPlayerWithPassword } from '../../types/player.types';
+import { resReg, dataReg } from '../../types/res.types';
+import players from '../../db/players';
+import { updateRooms } from './rooms.service';
 
 function registration(
     wss:WebSocketServer,
@@ -107,85 +105,6 @@ function registration(
     updateRooms(wss, id)
 }
 
-function createRoom(wss: WebSocketServer, ws: WebSocket & { playerIndex: string; playerName: string }, id: number) {
-    const roomId = crypto.randomUUID().toString();
-
-    console.log(`User ${ws.playerName} create room ${roomId}`);
-
-    const newRoom: room = {
-        index: roomId,
-        usersId: [],
-    };
-    rooms.push(newRoom);
-
-    addUserToRoom(ws, newRoom.index);
-    console.log(newRoom);
-
-    createGame(ws, roomId, id);
-    updateRooms(wss, id);
-}
-
-function addUserToRoom(ws: WebSocket & { playerIndex: string; playerName: string }, roomId: string) {
-    console.log(`User ${ws.playerName} in room ${roomId}`);
-
-    const room = rooms.find(room => room.index === roomId);
-    if (!room) {
-        return [];
-    }
-
-    if (room.usersId.includes(ws.playerIndex)) {
-        return room.usersId;
-    }
-
-    room.usersId.push(ws.playerIndex);
-
-    return room.usersId;
-}
-
-function createGame(ws: WebSocket & { playerIndex: string; playerName: string }, roomId: string, id: number) {
-    const dataString: dataCreateGame = {
-        idGame: roomId,
-        idPlayer: ws.playerIndex,
-    };
-    const res: resCreateGame = {
-        type: 'create_game',
-        data: JSON.stringify(dataString),
-        id,
-    };
-
-    ws.send(JSON.stringify(res));
-}
-
-function updateRooms(wss: WebSocketServer, id: number) {
-    const roomWithOnePlayer: dataUpdateRoom = rooms
-        .filter(room => room.usersId.length === 1)
-        .map(room => {
-            const result: updateRooms = {
-                roomId: room.index,
-                roomUsers: [
-                    {
-                        name: players.find(player => player.index === room.usersId[0])?.name ?? '',
-                        index: room.usersId[0],
-                    },
-                ],
-            };
-
-            return result;
-        }); 
-
-    const res: resUpdateRoom = {
-        type: 'update_room',
-        data: JSON.stringify(roomWithOnePlayer),
-        id,
-    };
-
-    wss.clients.forEach(client => {
-        if (client.readyState === client.OPEN) {
-            client.send(JSON.stringify(res));
-        }
-    });
-}
-
 function validation(name: string, password: string) {
     if (name.length < 5 || password.length < 5) {
         return false;
@@ -194,4 +113,4 @@ function validation(name: string, password: string) {
     return true;
 }
 
-export { registration, createRoom, addUserToRoom };
+export { registration };
