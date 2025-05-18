@@ -31,4 +31,8 @@ type dataStartGame = {
     currentPlayerIndex: string;
 };
 
-export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame };
+type dataTurn = {
+    currentPlayer: string;
+}
+
+export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame, dataTurn };

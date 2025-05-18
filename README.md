@@ -15,7 +15,7 @@
 
    ```bash
    git clone git@github.com:ArturKhelshtein/battleship.git
-   cd CRUD-API
+   cd battleship
    ```
 
 3. Set dependencies:

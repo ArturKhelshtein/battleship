@@ -1,6 +1,6 @@
 import { WebSocketServer } from 'ws';
-import IBattleshipWebSocket from '../../types/battleshipWebSocket.type';
-import { dataCreateGame, dataStartGame, resType } from '../../types/res.types';
+import IBattleshipWebSocket from '../../types/battleshipWebSocket.types';
+import { dataCreateGame, dataStartGame, dataTurn, resType } from '../../types/res.types';
 import ship from '../../types/ship.types';
 import { preparingRes } from '../utils';
 import games from '../../db/games';
@@ -26,38 +26,51 @@ function joinGame(ws: IBattleshipWebSocket, gameId: string, id: number) {
 
 function startGame(
     wss: WebSocketServer,
-    readyPlayer: { gameId: string; ships: ship[]; playerIndex: string },
+    readyPlayer: { gameId: string; ships: ship[]; indexPlayer: string },
     id: number
 ) {
-    const playerIndex = readyPlayer.playerIndex;
-    const startGameId = readyPlayer.gameId
+    const playerIndex = readyPlayer.indexPlayer;
+    const startGameId = readyPlayer.gameId;
 
-    const userInGame: game = {
+    const gameWithPlayer: game = {
         gameId: startGameId,
         ships: readyPlayer.ships,
         playerIndex,
     };
-    games.push(userInGame);
 
-    const startGame: game[] = games.filter(game => game.gameId === startGameId);
+    const isFirstPlayer = games.every(game => game.gameId !== startGameId);
 
-    if (startGame.length > 1) {
-        console.log(2)
+    if (isFirstPlayer) {
+        gameWithPlayer.startedPlayerIndex = playerIndex;
+        games.push(gameWithPlayer);
+        return;
+    }
+
+    games.push(gameWithPlayer);
+
+    const gameRecords: game[] = games.filter(game => game.gameId === startGameId);
+
+    if (gameRecords.length > 1) {
         wss.clients.forEach(client => {
             const clientBS = client as IBattleshipWebSocket;
 
-            const isYourGame = startGame.filter(game => game.playerIndex === clientBS.playerIndex);
+            const isPlayerInGame = gameRecords.some(game => game.playerIndex === clientBS.playerIndex);
 
-            if (!isYourGame) {
+            if (!isPlayerInGame) {
                 return;
             }
-console.log(3)
-            const ships =
-            startGame.find(game => game.playerIndex === playerIndex)?.ships || [];
+
+            const playersGame = gameRecords.find(game => game.playerIndex === clientBS.playerIndex);
+
+            if (playersGame?.startedPlayerIndex === clientBS.playerIndex) {
+                turn(clientBS, id);
+            }
+
+            const ships = playersGame?.ships || [];
 
             const dataString: dataStartGame = {
                 ships,
-                currentPlayerIndex: readyPlayer.playerIndex,
+                currentPlayerIndex: readyPlayer.indexPlayer,
             };
             const res = preparingRes(resType.start_game, dataString, id);
 
@@ -66,6 +79,14 @@ console.log(3)
             }
         });
     }
+}
+
+function turn(ws: IBattleshipWebSocket, id: number) {
+    const dataString: dataTurn = {
+        currentPlayer: ws.playerIndex,
+    };
+
+    ws.send(JSON.stringify(preparingRes(resType.turn, JSON.stringify(dataString), id)));
 }
 
 export { createGame, joinGame, startGame };

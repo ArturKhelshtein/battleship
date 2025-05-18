@@ -85,7 +85,7 @@ function registration(
 
     res = preparingRes(resType.reg, dataString, id);
 
-    console.log(`Player ${name} registered`);
+    console.log(`Player ${newPlayer.name} registered with index: ${newPlayer.index} `);
     ws.send(JSON.stringify(res));
     updateRooms(wss, id);
 }

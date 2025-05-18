@@ -31,8 +31,10 @@ function handleMessage(wss: WebSocketServer, ws: any, message: string) {
                 updateRooms(wss, req.id);
                 break;
             case 'add_ships':
-                const readyPlayer = data as { gameId: string; ships: ship[]; playerIndex: string };
+                const readyPlayer = data as { gameId: string; ships: ship[]; indexPlayer: string };
                 startGame(wss, readyPlayer, req.id);
+                break;
+            case 'attack':
                 break;
             default:
                 console.log(`Unknown message type: ${req.type}`);

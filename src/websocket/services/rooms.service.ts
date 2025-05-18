@@ -1,11 +1,12 @@
 import { WebSocketServer } from 'ws';
 
-import IBattleshipWebSocket from '../../types/battleshipWebSocket.type';
-import { dataUpdateRoom, resUpdateRoom } from '../../types/res.types';
+import IBattleshipWebSocket from '../../types/battleshipWebSocket.types';
+import { dataUpdateRoom, resType } from '../../types/res.types';
 import { createGame, joinGame } from './game.service';
 import { room, updateRoom } from '../../types/room.types';
 import rooms from '../../db/rooms';
 import players from '../../db/players';
+import { preparingRes } from '../utils';
 
 function createRoom(wss: WebSocketServer, ws: IBattleshipWebSocket, id: number) {
     const roomId = crypto.randomUUID().toString();
@@ -65,15 +66,9 @@ function updateRooms(wss: WebSocketServer, id: number) {
             return result;
         }); 
 
-    const res: resUpdateRoom = {
-        type: 'update_room',
-        data: JSON.stringify(roomWithOnePlayer),
-        id,
-    };
-
     wss.clients.forEach(client => {
         if (client.readyState === client.OPEN) {
-            client.send(JSON.stringify(res));
+            client.send(JSON.stringify(preparingRes(resType.update_room, roomWithOnePlayer, id)));
         }
     });
 }
