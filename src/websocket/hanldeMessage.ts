@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 
 import message from '../types/message.types';
 import { registration } from './services/registration.services';
-import { addUserToRoom, createRoom, joinRoom, updateRooms } from './services/rooms.service';
+import { createRoom, joinRoom, updateRooms } from './services/rooms.service';
 
 function handleMessage(wss: WebSocketServer, ws: any, message: string) {
     try {
