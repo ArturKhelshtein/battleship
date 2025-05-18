@@ -29,53 +29,47 @@ function startGame(
     readyPlayer: { gameId: string; ships: ship[]; indexPlayer: string },
     id: number
 ) {
-    const playerIndex = readyPlayer.indexPlayer;
-    const startGameId = readyPlayer.gameId;
+    const { gameId, ships, indexPlayer } = readyPlayer;
 
-    const gameWithPlayer: game = {
-        gameId: startGameId,
-        ships: readyPlayer.ships,
-        playerIndex,
+    const isFirstPlayer = !games.some(game => game.gameId === gameId);
+
+    const playerGame: game = {
+        gameId,
+        ships,
+        playerIndex: indexPlayer,
+        ...(isFirstPlayer && { startedPlayerIndex: indexPlayer }),
     };
 
-    const isFirstPlayer = games.every(game => game.gameId !== startGameId);
+    games.push(playerGame);
 
-    if (isFirstPlayer) {
-        gameWithPlayer.startedPlayerIndex = playerIndex;
-        games.push(gameWithPlayer);
-        return;
-    }
+    const gamePlayers: game[] = games.filter(game => game.gameId === gameId);
 
-    games.push(gameWithPlayer);
-
-    const gameRecords: game[] = games.filter(game => game.gameId === startGameId);
-
-    if (gameRecords.length > 1) {
+    if (gamePlayers.length > 1) {
         wss.clients.forEach(client => {
             const clientBS = client as IBattleshipWebSocket;
 
-            const isPlayerInGame = gameRecords.some(game => game.playerIndex === clientBS.playerIndex);
-
-            if (!isPlayerInGame) {
+            if (client.readyState !== client.OPEN) {
                 return;
             }
 
-            const playersGame = gameRecords.find(game => game.playerIndex === clientBS.playerIndex);
+            const clientGame = gamePlayers.find(game => game.playerIndex === clientBS.playerIndex);
 
-            if (playersGame?.startedPlayerIndex === clientBS.playerIndex) {
-                turn(clientBS, id);
+            if (!clientGame) {
+                return;
             }
 
-            const ships = playersGame?.ships || [];
+            const isCurrentPlayerFirst = gamePlayers.find(game => game.startedPlayerIndex)?.startedPlayerIndex === clientBS.playerIndex;
 
+            const ships = clientGame?.ships || [];
             const dataString: dataStartGame = {
                 ships,
                 currentPlayerIndex: readyPlayer.indexPlayer,
             };
-            const res = preparingRes(resType.start_game, dataString, id);
 
-            if (client.readyState === client.OPEN) {
-                client.send(JSON.stringify(res));
+            client.send(JSON.stringify(preparingRes(resType.start_game, dataString, id)));
+
+            if (isCurrentPlayerFirst) {
+                turn(clientBS, id);
             }
         });
     }
