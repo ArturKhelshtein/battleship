@@ -94,23 +94,23 @@ function shoot(
 ) {
     const { gameId, x, y, indexPlayer } = attack;
 
-    const currentGames = games.filter(game => game.gameId === gameId);
+    const gameSessions = games.filter(game => game.gameId === gameId);
 
-    const gameDefendingPlayer = currentGames.find(game => game.playerIndex !== ws.playerIndex);
+    const enemyGame = gameSessions.find(game => game.playerIndex !== ws.playerIndex);
 
-    if (!gameDefendingPlayer) {
+    if (!enemyGame) {
         return;
     }
 
-    const gameDefendingPlayerIndex = gameDefendingPlayer.playerIndex;
+    const gameDefendingPlayerIndex = enemyGame.playerIndex;
 
-    const alreadyShot = gameDefendingPlayer.shots.some(pos => pos.x === x && pos.y === y);
+    const alreadyShot = enemyGame.shots.some(pos => pos.x === x && pos.y === y);
 
     if (alreadyShot) {
         return;
     }
 
-    const hitShip = gameDefendingPlayer.ships.find(ship => isShipHit(ship, x, y));
+    const hitShip = enemyGame.ships.find(ship => isShipHit(ship, x, y));
 
     if (hitShip) {
         hitShip.stamina = (hitShip.stamina || 0) - 1;
@@ -119,16 +119,16 @@ function shoot(
     const isKilled = hitShip?.stamina === 0;
     const resultAttack = hitShip ? (isKilled ? 'killed' : 'shot') : 'miss';
 
-    if (isKilled && hitShip) {
+    if (isKilled) {
         for (let i = 0; i < hitShip.length; i++) {
             const shipX = hitShip.direction ? hitShip.position.x : hitShip.position.x + i;
             const shipY = hitShip.direction ? hitShip.position.y + i : hitShip.position.y;
 
-            const existingShot = gameDefendingPlayer.shots.find(shot => shot.x === shipX && shot.y === shipY);
+            const existingShot = enemyGame.shots.find(shot => shot.x === shipX && shot.y === shipY);
             if (existingShot) {
                 existingShot.result = 'killed';
             } else {
-                gameDefendingPlayer.shots.push({
+                enemyGame.shots.push({
                     x: shipX,
                     y: shipY,
                     result: 'killed',
@@ -154,8 +154,8 @@ function shoot(
 
         const aroundCells = cellsAround(hitShip);
         aroundCells.forEach(cell => {
-            if (!gameDefendingPlayer.shots.some(shot => shot.x === cell.x && shot.y === cell.y)) {
-                gameDefendingPlayer.shots.push({
+            if (!enemyGame.shots.some(shot => shot.x === cell.x && shot.y === cell.y)) {
+                enemyGame.shots.push({
                     x: cell.x,
                     y: cell.y,
                     result: 'miss',
@@ -179,7 +179,7 @@ function shoot(
             }
         });
     } else {
-        gameDefendingPlayer.shots.push({
+        enemyGame.shots.push({
             x,
             y,
             result: resultAttack,
@@ -202,25 +202,15 @@ function shoot(
         });
     }
 
-    if (resultAttack === 'miss') {
-        wss.clients.forEach(client => {
-            const clientBS = client as IBattleshipWebSocket;
-            if (clientBS.readyState === clientBS.OPEN) {
-                turn(clientBS, gameDefendingPlayerIndex, id);
-            }
-        });
-    }
+    const nextTurn = resultAttack === 'miss' ? gameDefendingPlayerIndex : indexPlayer;
+    wss.clients.forEach(client => {
+        const clientBS = client as IBattleshipWebSocket;
+        if (clientBS.readyState === clientBS.OPEN) {
+            turn(clientBS, nextTurn, id);
+        }
+    });
 
-    if (resultAttack === 'shot' || resultAttack === 'killed') {
-        wss.clients.forEach(client => {
-            const clientBS = client as IBattleshipWebSocket;
-            if (clientBS.readyState === clientBS.OPEN) {
-                turn(clientBS, indexPlayer, id);
-            }
-        });
-    }
-
-    const isAllKilled = gameDefendingPlayer.ships.every(ship => ship.stamina === 0);
+    const isAllKilled = enemyGame.ships.every(ship => ship.stamina === 0);
 
     if (isAllKilled) {
         const dataString: dataFinish = {
@@ -268,9 +258,9 @@ function randomAttack(
         return;
     }
 
-    const gameDefendingPlayer = currentGames.find(game => game.playerIndex !== ws.playerIndex);
+    const enemyGame = currentGames.find(game => game.playerIndex !== ws.playerIndex);
 
-    if (!gameDefendingPlayer) {
+    if (!enemyGame) {
         return;
     }
 
@@ -282,7 +272,7 @@ function randomAttack(
         }
     }
 
-    const availableCells = allCells.filter(c => !gameDefendingPlayer.shots.some(s => s.x === c.x && s.y === c.y));
+    const availableCells = allCells.filter(c => !enemyGame.shots.some(s => s.x === c.x && s.y === c.y));
 
     if (!availableCells) {
         return;
