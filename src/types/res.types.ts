@@ -35,4 +35,17 @@ type dataTurn = {
     currentPlayer: string;
 }
 
-export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame, dataTurn };
+type dataShoot = {
+    position: {
+        x: number;
+        y: number;
+    };
+    currentPlayer: string;
+    status: 'miss' | 'killed' | 'shot';
+}
+
+type dataFinish = {
+    winPlayer: string;
+}
+
+export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame, dataTurn, dataShoot, dataFinish };

@@ -7,6 +7,7 @@ type game = {
     playerIndex: string;
     startedPlayerIndex?: string;
     shots: shot[];
+    playerTurn: boolean;
 };
 
 export default game;
