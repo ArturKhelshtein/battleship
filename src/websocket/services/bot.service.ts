@@ -2,8 +2,7 @@ import { WebSocketServer } from 'ws';
 import IBattleshipWebSocket from '../../types/battleshipWebSocket.types';
 import { addUserToRoom, createRoom } from './rooms.service';
 import rooms from '../../db/rooms';
-import players from '../../db/players';
-import { createGame, startGame } from './game.service';
+import { createGame } from './game.service';
 import { room } from '../../types/room.types';
 import ship from '../../types/ship.types';
 
@@ -22,10 +21,6 @@ function createSinglePlayRoom(wss: WebSocketServer, ws: IBattleshipWebSocket, id
 
     addUserToRoom(ws, roomId);
     createGame(ws, roomId, id);
-}
-
-function singlePlay(wss: WebSocketServer, ws: IBattleshipWebSocket, id: number) {
-    startGame(wss);
 }
 
 function generateRandomShips(): ship[] {
@@ -112,4 +107,4 @@ function generateRandomShips(): ship[] {
     return ships;
 }
 
-export { singlePlay, createSinglePlayRoom, generateRandomShips };
+export { createSinglePlayRoom, generateRandomShips };

@@ -60,7 +60,7 @@ function startGame(
             const botGame: game = {
                 gameId,
                 ships: botShips.map(ship => ({ ...ship, stamina: ship.length })),
-                playerIndex: `bot_${Math.random().toString(36).substring(2, 8)}`,
+                playerIndex: `bot_${crypto.randomUUID().toString()}`,
                 shots: [],
                 playerTurn: true,
             };
@@ -229,6 +229,15 @@ function shoot(
             turn(clientBS, nextTurn, id);
         }
     });
+
+    if (nextTurn.startsWith('bot_')) {
+        const botGame = games.find(g => g.playerIndex === nextTurn);
+        if (botGame && botGame.playerTurn) {
+            setTimeout(() => {
+                randomAttack(wss, ws, { gameId: botGame.gameId, indexPlayer: nextTurn }, id);
+            }, 1000);
+        }
+    }
 
     const isAllKilled = enemyGame.ships.every(ship => ship.stamina === 0);
 
