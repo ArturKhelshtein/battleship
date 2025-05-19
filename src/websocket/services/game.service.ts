@@ -116,7 +116,7 @@ function shoot(
 
     const gameSessions = games.filter(game => game.gameId === gameId);
 
-    const enemyGame = gameSessions.find(game => game.playerIndex !== ws.playerIndex);
+    const enemyGame = gameSessions.find(game => game.playerIndex !== indexPlayer);
 
     if (!enemyGame) {
         return;
@@ -299,7 +299,7 @@ function randomAttack(
         return;
     }
 
-    const enemyGame = currentGames.find(game => game.playerIndex !== ws.playerIndex);
+    const enemyGame = currentGames.find(game => game.playerIndex !== indexPlayer);
 
     if (!enemyGame) {
         return;
