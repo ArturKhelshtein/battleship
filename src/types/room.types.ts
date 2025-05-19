@@ -3,6 +3,7 @@ import { IPlayer } from "./player.types";
 type room = {
     index: string;
     usersId: string[];
+    isPrivate?: boolean;
 };
 
 type updateRoom = {

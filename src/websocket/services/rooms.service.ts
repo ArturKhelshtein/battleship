@@ -51,7 +51,7 @@ function addUserToRoom(ws: IBattleshipWebSocket, roomId: string) {
 
 function updateRooms(wss: WebSocketServer, id: number) {
     const roomWithOnePlayer: dataUpdateRoom = rooms
-        .filter(room => room.usersId.length === 1)
+        .filter(room => room.usersId.length === 1 && !room.isPrivate)
         .map(room => {
             const result: updateRoom = {
                 roomId: room.index,

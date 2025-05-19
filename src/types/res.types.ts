@@ -48,4 +48,9 @@ type dataFinish = {
     winPlayer: string;
 }
 
-export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame, dataTurn, dataShoot, dataFinish };
+type dataUpdateWinners = {
+    name: string;
+    wins: number;
+}[]
+
+export { resType, dataReg, dataCreateGame, dataUpdateRoom, dataStartGame, dataTurn, dataShoot, dataFinish, dataUpdateWinners };

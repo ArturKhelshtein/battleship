@@ -1,10 +1,12 @@
 import { WebSocketServer } from 'ws';
 import IBattleshipWebSocket from '../../types/battleshipWebSocket.types';
-import { resType, dataCreateGame, dataStartGame, dataTurn, dataShoot, dataFinish } from '../../types/res.types';
+import { resType, dataCreateGame, dataStartGame, dataTurn, dataShoot, dataFinish, dataUpdateWinners } from '../../types/res.types';
 import ship from '../../types/ship.types';
 import { preparingRes } from '../utils';
 import games from '../../db/games';
 import game from '../../types/game.types';
+import rooms from '../../db/rooms';
+import { generateRandomShips } from './bot.service';
 
 function createGame(ws: IBattleshipWebSocket, roomId: string, id: number) {
     const dataString: dataCreateGame = {
@@ -48,6 +50,24 @@ function startGame(
     };
 
     games.push(playerGame);
+
+    if (isFirstPlayer) {
+        const room = rooms.find(r => r.index === gameId);
+    
+        if (room?.isPrivate) {
+            const botShips = generateRandomShips();
+    
+            const botGame: game = {
+                gameId,
+                ships: botShips.map(ship => ({ ...ship, stamina: ship.length })),
+                playerIndex: `bot_${Math.random().toString(36).substring(2, 8)}`,
+                shots: [],
+                playerTurn: true,
+            };
+    
+            games.push(botGame);
+        }
+    }
 
     const gamePlayers: game[] = games.filter(game => game.gameId === gameId);
 
@@ -221,6 +241,18 @@ function shoot(
             const clientBS = client as IBattleshipWebSocket;
             if (clientBS.readyState === clientBS.OPEN) {
                 clientBS.send(JSON.stringify(preparingRes(resType.finish, dataString, id)));
+            }
+        });
+
+        const winnersData: dataUpdateWinners = [{
+            name: ws.playerName,
+            wins: 1
+        }];
+
+        wss.clients.forEach(client => {
+            const clientBS = client as IBattleshipWebSocket;
+            if (clientBS.readyState === clientBS.OPEN) {
+                clientBS.send(JSON.stringify(preparingRes(resType.update_winners, winnersData, id)));
             }
         });
     }
