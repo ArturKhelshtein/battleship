@@ -55,7 +55,7 @@ function startGame(
         wss.clients.forEach(client => {
             const clientBS = client as IBattleshipWebSocket;
 
-            if (client.readyState !== client.OPEN) {
+            if (clientBS.readyState !== clientBS.OPEN) {
                 return;
             }
 
@@ -65,9 +65,6 @@ function startGame(
                 return;
             }
 
-            const isCurrentPlayerFirst =
-                gamePlayers.find(game => game.startedPlayerIndex)?.startedPlayerIndex === clientBS.playerIndex;
-
             const ships = clientGame?.ships || [];
             const dataString: dataStartGame = {
                 ships,
@@ -76,21 +73,17 @@ function startGame(
 
             client.send(JSON.stringify(preparingRes(resType.start_game, dataString, id)));
 
-            if (isCurrentPlayerFirst) {
-                turn(clientBS, gameId, id);
-            }
+            turn(clientBS, readyPlayer.indexPlayer, id);
         });
     }
 }
 
-function turn(ws: IBattleshipWebSocket, gameId: string, id: number) {
+function turn(ws: IBattleshipWebSocket, playerId: string, id: number) {
     const dataString: dataTurn = {
-        currentPlayer: ws.playerIndex,
+        currentPlayer: playerId,
     };
 
-    games.filter(game => game.gameId === gameId).forEach(game => game.playerTurn = !game.playerTurn);
-
-    ws.send(JSON.stringify(preparingRes(resType.turn, JSON.stringify(dataString), id)));
+    ws.send(JSON.stringify(preparingRes(resType.turn, dataString, id)));
 }
 
 function shoot(
@@ -101,11 +94,15 @@ function shoot(
 ) {
     const { gameId, x, y, indexPlayer } = attack;
 
-    const gameDefendingPlayer = games.find(game => game.gameId === gameId && game.playerIndex !== ws.playerIndex);
+    const currentGames = games.filter(game => game.gameId === gameId);
+
+    const gameDefendingPlayer = currentGames.find(game => game.playerIndex !== ws.playerIndex);
 
     if (!gameDefendingPlayer) {
         return;
     }
+
+    const gameDefendingPlayerIndex = gameDefendingPlayer.playerIndex;
 
     const alreadyShot = gameDefendingPlayer.shots.some(pos => pos.x === x && pos.y === y);
 
@@ -114,32 +111,114 @@ function shoot(
     }
 
     const hitShip = gameDefendingPlayer.ships.find(ship => isShipHit(ship, x, y));
-    
+
     if (hitShip) {
         hitShip.stamina = (hitShip.stamina || 0) - 1;
     }
 
-    const isShot = hitShip !== undefined;
     const isKilled = hitShip?.stamina === 0;
+    const resultAttack = hitShip ? (isKilled ? 'killed' : 'shot') : 'miss';
 
-    gameDefendingPlayer.shots.push({
-        x,
-        y,
-        result: isShot ? 'shot' : isKilled ? 'killed' : 'miss',
-    });
+    if (isKilled && hitShip) {
+        for (let i = 0; i < hitShip.length; i++) {
+            const shipX = hitShip.direction ? hitShip.position.x : hitShip.position.x + i;
+            const shipY = hitShip.direction ? hitShip.position.y + i : hitShip.position.y;
 
-    const dataString: dataShoot = {
-        currentPlayer: indexPlayer,
-        position: {
+            const existingShot = gameDefendingPlayer.shots.find(shot => shot.x === shipX && shot.y === shipY);
+            if (existingShot) {
+                existingShot.result = 'killed';
+            } else {
+                gameDefendingPlayer.shots.push({
+                    x: shipX,
+                    y: shipY,
+                    result: 'killed',
+                });
+            }
+
+            const killedDataString: dataShoot = {
+                currentPlayer: indexPlayer,
+                position: {
+                    x: shipX,
+                    y: shipY,
+                },
+                status: 'killed',
+            };
+
+            wss.clients.forEach(client => {
+                const clientBS = client as IBattleshipWebSocket;
+                if (clientBS.readyState === clientBS.OPEN) {
+                    clientBS.send(JSON.stringify(preparingRes(resType.attack, killedDataString, id)));
+                }
+            });
+        }
+
+        const aroundCells = cellsAround(hitShip);
+        aroundCells.forEach(cell => {
+            if (!gameDefendingPlayer.shots.some(shot => shot.x === cell.x && shot.y === cell.y)) {
+                gameDefendingPlayer.shots.push({
+                    x: cell.x,
+                    y: cell.y,
+                    result: 'miss',
+                });
+
+                const missDataString: dataShoot = {
+                    currentPlayer: indexPlayer,
+                    position: {
+                        x: cell.x,
+                        y: cell.y,
+                    },
+                    status: 'miss',
+                };
+
+                wss.clients.forEach(client => {
+                    const clientBS = client as IBattleshipWebSocket;
+                    if (clientBS.readyState === clientBS.OPEN) {
+                        clientBS.send(JSON.stringify(preparingRes(resType.attack, missDataString, id)));
+                    }
+                });
+            }
+        });
+    } else {
+        gameDefendingPlayer.shots.push({
             x,
             y,
-        },
-        status: isShot ? 'shot' : isKilled ? 'killed' : 'miss',
-    };
+            result: resultAttack,
+        });
 
-    console.log('SHOT ', gameDefendingPlayer.shots)
+        const dataString: dataShoot = {
+            currentPlayer: indexPlayer,
+            position: {
+                x,
+                y,
+            },
+            status: resultAttack,
+        };
 
-    ws.send(JSON.stringify(preparingRes(resType.attack, dataString, id)));
+        wss.clients.forEach(client => {
+            const clientBS = client as IBattleshipWebSocket;
+            if (clientBS.readyState === clientBS.OPEN) {
+                clientBS.send(JSON.stringify(preparingRes(resType.attack, dataString, id)));
+            }
+        });
+    }
+
+    if (resultAttack === 'miss') {
+        wss.clients.forEach(client => {
+            const clientBS = client as IBattleshipWebSocket;
+            if (clientBS.readyState === clientBS.OPEN) {
+                turn(clientBS, gameDefendingPlayerIndex, id);
+            }
+        });
+    }
+
+    if (resultAttack === 'shot' || resultAttack === 'killed') {
+        wss.clients.forEach(client => {
+            const clientBS = client as IBattleshipWebSocket;
+            if (clientBS.readyState === clientBS.OPEN) {
+                turn(clientBS, indexPlayer, id);
+            }
+        });
+    }
 
     const isAllKilled = gameDefendingPlayer.ships.every(ship => ship.stamina === 0);
 
@@ -148,22 +227,80 @@ function shoot(
             winPlayer: indexPlayer,
         };
 
-        ws.send(JSON.stringify(preparingRes(resType.finish, dataString, id)));
+        wss.clients.forEach(client => {
+            const clientBS = client as IBattleshipWebSocket;
+            if (clientBS.readyState === clientBS.OPEN) {
+                clientBS.send(JSON.stringify(preparingRes(resType.finish, dataString, id)));
+            }
+        });
     }
+}
+
+function cellsAround(ship: ship): { x: number; y: number }[] {
+    const {
+        position: { x, y },
+        length,
+        direction,
+    } = ship;
+    const [dx, dy] = direction ? [0, 1] : [1, 0];
+    const around: { x: number; y: number }[] = [];
+
+    around.push({ x: x - dx, y: y - dy }, { x: x + dx * length, y: y + dy * length });
+
+    for (let i = -1; i < length + 1; ++i) {
+        around.push({ x: x - dy + i * dx, y: y - dx + i * dy }, { x: x + dy + i * dx, y: y + dx + i * dy });
+    }
+
+    return around.filter(({ x, y }) => 0 <= x && x < 10 && 0 <= y && y < 10);
+}
+
+function randomAttack(
+    wss: WebSocketServer,
+    ws: IBattleshipWebSocket,
+    random: { gameId: string; indexPlayer: string },
+    id: number
+) {
+    const { gameId, indexPlayer } = random;
+
+    const currentGames = games.filter(game => game.gameId === gameId);
+
+    if (!currentGames) {
+        return;
+    }
+
+    const gameDefendingPlayer = currentGames.find(game => game.playerIndex !== ws.playerIndex);
+
+    if (!gameDefendingPlayer) {
+        return;
+    }
+
+    const allCells: { x: number; y: number }[] = [];
+
+    for (let x = 0; x < 10; x++) {
+        for (let y = 0; y < 10; y++) {
+            allCells.push({ x, y });
+        }
+    }
+
+    const availableCells = allCells.filter(c => !gameDefendingPlayer.shots.some(s => s.x === c.x && s.y === c.y));
+
+    if (!availableCells) {
+        return;
+    }
+
+    const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+
+    shoot(wss, ws, { gameId, x: randomCell.x, y: randomCell.y, indexPlayer }, id);
 }
 
 function isShipHit(ship: ship, x: number, y: number): boolean {
     const { position, direction, length } = ship;
-    
+
     if (direction) {
-        return y === position.y && 
-               x >= position.x && 
-               x < position.x + length;
+        return x === position.x && y >= position.y && y < position.y + length;
     } else {
-        return x === position.x && 
-               y >= position.y && 
-               y < position.y + length;
+        return y === position.y && x >= position.x && x < position.x + length;
     }
 }
 
-export { createGame, joinGame, startGame, shoot };
+export { createGame, joinGame, startGame, shoot, randomAttack };

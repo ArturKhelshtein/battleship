@@ -4,7 +4,7 @@ import message from '../types/message.types';
 import { registration } from './services/registration.services';
 import { createRoom, joinRoom, updateRooms } from './services/rooms.service';
 import ship from '../types/ship.types';
-import { shoot, startGame } from './services/game.service';
+import { startGame, shoot, randomAttack } from './services/game.service';
 
 function handleMessage(wss: WebSocketServer, ws: any, message: string) {
     try {
@@ -37,6 +37,10 @@ function handleMessage(wss: WebSocketServer, ws: any, message: string) {
             case 'attack':
                 const attack = data as { gameId: string; x: number; y: number; indexPlayer: string };
                 shoot(wss, ws, attack, req.id);
+                break;
+            case 'randomAttack':
+                const random = data as { gameId: string; indexPlayer: string };
+                randomAttack(wss, ws, random, req.id);
                 break;
             default:
                 console.log(`Unknown message type: ${req.type}`);
